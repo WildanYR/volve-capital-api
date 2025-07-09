@@ -57,7 +57,6 @@ jobs:
           region: ${{env.REGION}}
           flags: "--allow-unauthenticated"
           env_vars: |
-            PORT=${{secrets.PORT}}
             API_PREFIX=${{secrets.API_PREFIX}}
             TIMEZONE=${{secrets.TIMEZONE}}
             TIMELOCALE=${{secrets.TIMELOCALE}}
