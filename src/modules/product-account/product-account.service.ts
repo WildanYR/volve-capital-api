@@ -30,6 +30,7 @@ import {
   ProductAccountUser,
   ProductAccountUserAttributes,
 } from 'src/database/models/product-account-user.model';
+import { Transaction } from 'sequelize';
 
 @Injectable()
 export class ProductAccountService {
@@ -81,7 +82,7 @@ export class ProductAccountService {
     );
   }
 
-  async findOne(productAccountId: number) {
+  async findOne(productAccountId: number, transaction?: Transaction) {
     const productAccount = await this.productAccountRepository.findOne({
       where: { id: productAccountId },
       include: [
@@ -97,6 +98,7 @@ export class ProductAccountService {
           ],
         },
       ],
+      transaction,
     });
 
     if (!productAccount)
@@ -254,8 +256,11 @@ export class ProductAccountService {
   async update(
     productAccountId: number,
     updateProductAccountDto: UpdateProductAccountDto,
+    transaction?: Transaction,
   ) {
-    const productAccount = (await this.findOne(productAccountId)).toJSON();
+    const productAccount = (
+      await this.findOne(productAccountId, transaction)
+    ).toJSON();
     const updateData = { ...updateProductAccountDto };
     if (updateProductAccountDto.status === 'KOSONG') {
       // batch start end, product variant id set to null
@@ -265,13 +270,17 @@ export class ProductAccountService {
       // set status user = expired
       await this.productAccountUserRepository.update(
         { status: 'EXPIRED' },
-        { where: { status: 'AKTIF', product_account_id: productAccount.id } },
+        {
+          where: { status: 'AKTIF', product_account_id: productAccount.id },
+          transaction,
+        },
       );
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     return this.productAccountRepository.update(updateData as any, {
       where: { id: productAccount.id },
+      transaction,
     });
   }
 

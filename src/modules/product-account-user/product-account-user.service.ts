@@ -1,5 +1,8 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { PRODUCT_ACCOUNT_USER_REPOSITORY } from 'src/constant/database.const';
+import {
+  MYSQL_PROVIDER,
+  PRODUCT_ACCOUNT_USER_REPOSITORY,
+} from 'src/constant/database.const';
 import { ProductAccountUser } from 'src/database/models/product-account-user.model';
 import { Order, WhereOptions } from 'sequelize';
 import { Op } from 'sequelize';
@@ -14,12 +17,14 @@ import { Product } from 'src/database/models/product.model';
 import { ProductVariant } from 'src/database/models/product-variant.model';
 import { ProductAccountService } from '../product-account/product-account.service';
 import { UpdateProductAccountDto } from '../product-account/dto/update-product-account.dto';
+import { MysqlProvider } from 'src/database/mysql.provider';
 
 @Injectable()
 export class ProductAccountUserService {
   constructor(
     private readonly paginateOrderService: PaginateOrderService,
     private readonly productAccountService: ProductAccountService,
+    @Inject(MYSQL_PROVIDER) private mysqlProvider: MysqlProvider,
     @Inject(PRODUCT_ACCOUNT_USER_REPOSITORY)
     private readonly productAccountUserRepository: typeof ProductAccountUser,
   ) {}
@@ -135,18 +140,62 @@ export class ProductAccountUserService {
     if (productAccount.status === 'KOSONG') {
       updateProductAccountData.status = 'AKTIF';
     }
+    const transaction = await this.mysqlProvider.transaction();
+    try {
+      await this.productAccountService.update(
+        productAccount.id,
+        updateProductAccountData,
+        transaction,
+      );
 
-    await this.productAccountService.update(
-      productAccount.id,
-      updateProductAccountData,
-    );
+      const userCount = await this.productAccountUserRepository.count({
+        where: { product_account_id: productAccount.id, status: 'AKTIF' },
+      });
+      const alphaMap = [
+        'A',
+        'B',
+        'C',
+        'D',
+        'E',
+        'F',
+        'G',
+        'H',
+        'I',
+        'J',
+        'K',
+        'L',
+        'M',
+        'N',
+        'O',
+        'P',
+        'Q',
+        'R',
+        'S',
+        'T',
+        'U',
+        'V',
+        'W',
+        'X',
+        'Y',
+        'Z',
+      ];
 
-    return this.productAccountUserRepository.create({
-      name: createProductAccountUserDto.name,
-      product_account_id: productAccount.id,
-      product_variant_id: createProductAccountUserDto.product_variant_id,
-      status: 'AKTIF',
-    });
+      const productAccountUser = await this.productAccountUserRepository.create(
+        {
+          name: createProductAccountUserDto.name,
+          product_account_id: productAccount.id,
+          product_variant_id: createProductAccountUserDto.product_variant_id,
+          status: 'AKTIF',
+          account_profile: alphaMap[userCount],
+        },
+        { transaction },
+      );
+      await transaction.commit();
+      return productAccountUser;
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
+    }
   }
 
   async update(
