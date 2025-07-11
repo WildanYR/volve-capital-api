@@ -16,4 +16,8 @@ export class UpdateProductVariantDto {
   @IsOptional()
   @IsNumber()
   max_user: number;
+
+  @IsOptional()
+  @IsString()
+  template: string;
 }

@@ -21,6 +21,10 @@ export class CreateProductVariantDto {
   @IsNumber()
   max_user: number;
 
+  @IsOptional()
+  @IsString()
+  template: string;
+
   @IsNotEmpty({ message: 'Produk tidak boleh kosong' })
   @IsNumber()
   product_id: number;

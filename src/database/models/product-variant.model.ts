@@ -82,6 +82,9 @@ export class ProductVariant extends Model<
   @Column(DataType.INTEGER)
   max_user: number;
 
+  @Column(DataType.TEXT)
+  template: string;
+
   @ForeignKey(() => Product)
   @AllowNull(false)
   @Column(DataType.BIGINT)
