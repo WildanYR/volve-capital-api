@@ -75,8 +75,33 @@ export class ProductAccountService {
       ],
     });
 
+    const productAccountJSON = productAccount.rows.map((item) => ({
+      ...item.toJSON(),
+      user_count: 0,
+    }));
+    const productAccountIds = productAccountJSON.map((item) => item.id);
+    const userCount = (await this.productAccountUserRepository.findAll({
+      attributes: [
+        'product_account_id',
+        [Sequelize.fn('COUNT', Sequelize.col('id')), 'user_count'],
+      ],
+      where: {
+        product_account_id: { [Op.in]: productAccountIds },
+      },
+      group: ['product_account_id'],
+      raw: true,
+    })) as unknown as { product_account_id: number; user_count: number }[];
+
+    for (const pa of productAccountJSON) {
+      for (const uc of userCount) {
+        if (pa.id === uc.product_account_id) {
+          pa.user_count = uc.user_count;
+        }
+      }
+    }
+
     return this.paginateOrderService.paginateOrderResponse(
-      productAccount.rows,
+      productAccountJSON,
       productAccount.count,
       paginateOrder,
     );
@@ -106,7 +131,25 @@ export class ProductAccountService {
         `productAccount dengan id: ${productAccountId} tidak ditemukan`,
       );
 
-    return productAccount;
+    const userCount = (await this.productAccountUserRepository.findAll({
+      attributes: [
+        'product_account_id',
+        [Sequelize.fn('COUNT', Sequelize.col('id')), 'user_count'],
+      ],
+      where: {
+        product_account_id: productAccount.id,
+      },
+      group: ['product_account_id'],
+      raw: true,
+    })) as unknown as { product_account_id: number; user_count: number }[];
+    const productAccountJSON = { ...productAccount.toJSON(), user_count: 0 };
+    if (
+      userCount.length &&
+      userCount[0].product_account_id === productAccountJSON.id
+    ) {
+      productAccountJSON.user_count = userCount[0].user_count;
+    }
+    return productAccountJSON;
   }
 
   async findUsable(productVariantId: number) {
@@ -258,9 +301,15 @@ export class ProductAccountService {
     updateProductAccountDto: UpdateProductAccountDto,
     transaction?: Transaction,
   ) {
-    const productAccount = (
-      await this.findOne(productAccountId, transaction)
-    ).toJSON();
+    const productAccount = await this.productAccountRepository.findOne({
+      where: { id: productAccountId },
+    });
+
+    if (!productAccount)
+      throw new NotFoundException(
+        `productAccount dengan id: ${productAccountId} tidak ditemukan`,
+      );
+
     const updateData = { ...updateProductAccountDto };
     if (updateProductAccountDto.status === 'KOSONG') {
       // batch start end, product variant id set to null
@@ -271,7 +320,7 @@ export class ProductAccountService {
       await this.productAccountUserRepository.update(
         { status: 'EXPIRED' },
         {
-          where: { status: 'AKTIF', product_account_id: productAccount.id },
+          where: { status: 'AKTIF', product_account_id: productAccountId },
           transaction,
         },
       );
@@ -279,13 +328,21 @@ export class ProductAccountService {
 
     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     return this.productAccountRepository.update(updateData as any, {
-      where: { id: productAccount.id },
+      where: { id: productAccountId },
       transaction,
     });
   }
 
   async remove(productAccountId: number) {
-    const productAccount = await this.findOne(productAccountId);
+    const productAccount = await this.productAccountRepository.findOne({
+      where: { id: productAccountId },
+    });
+
+    if (!productAccount)
+      throw new NotFoundException(
+        `productAccount dengan id: ${productAccountId} tidak ditemukan`,
+      );
+
     await productAccount.destroy();
   }
 }

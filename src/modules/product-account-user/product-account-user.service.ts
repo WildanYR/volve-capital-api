@@ -121,11 +121,9 @@ export class ProductAccountUserService {
   }
 
   async create(createProductAccountUserDto: CreateProductAccountUserDto) {
-    const productAccount = (
-      await this.productAccountService.findUsable(
-        createProductAccountUserDto.product_variant_id,
-      )
-    ).toJSON();
+    const productAccount = await this.productAccountService.findUsable(
+      createProductAccountUserDto.product_variant_id,
+    );
 
     const now = new Date();
     const msToAdd =
