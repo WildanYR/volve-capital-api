@@ -150,7 +150,6 @@ export class ProductAccountUserService {
         where: { product_account_id: productAccount.id, status: 'AKTIF' },
       });
       const alphaMap = [
-        'A',
         'B',
         'C',
         'D',
