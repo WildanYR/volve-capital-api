@@ -13,6 +13,7 @@ import { Product } from 'src/database/models/product.model';
 import { ProductAccountUserService } from '../product-account-user/product-account-user.service';
 import { Email } from 'src/database/models/email.model';
 import { ProductAccount } from 'src/database/models/product-account.model';
+import { Transaction as SequelizeTransaction } from 'sequelize';
 
 @Injectable()
 export class TransactionService {
@@ -91,29 +92,38 @@ export class TransactionService {
     return transaction;
   }
 
-  async create(createTransactionDto: CreateTransactionDto) {
+  async create(
+    createTransactionDto: CreateTransactionDto,
+    transaction?: SequelizeTransaction,
+  ) {
     /**
      * 1. get usable akun
      * 2. update batch end dari usable akun
      * 3. buat akun user baru di usable akun
      * 4. buat transaksi
      */
-    const productAccountUser = await this.productAccountUserService.create({
-      name: createTransactionDto.name,
-      product_variant_id: createTransactionDto.product_variant_id,
-    });
+    const productAccountUser = await this.productAccountUserService.create(
+      {
+        name: createTransactionDto.name,
+        product_variant_id: createTransactionDto.product_variant_id,
+      },
+      transaction,
+    );
 
     const productAccountUserObj = productAccountUser.toJSON();
     const status =
       createTransactionDto.status && createTransactionDto.status !== ''
         ? createTransactionDto.status
         : 'COMPLETED';
-    return this.transactionRepository.create({
-      status,
-      product_variant_id: createTransactionDto.product_variant_id,
-      product_account_id: productAccountUserObj.product_account_id,
-      product_account_user_id: productAccountUserObj.id,
-    });
+    return this.transactionRepository.create(
+      {
+        status,
+        product_variant_id: createTransactionDto.product_variant_id,
+        product_account_id: productAccountUserObj.product_account_id,
+        product_account_user_id: productAccountUserObj.id,
+      },
+      { transaction },
+    );
   }
 
   async update(

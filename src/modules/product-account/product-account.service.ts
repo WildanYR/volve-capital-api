@@ -87,6 +87,7 @@ export class ProductAccountService {
       ],
       where: {
         product_account_id: { [Op.in]: productAccountIds },
+        status: 'AKTIF',
       },
       group: ['product_account_id'],
       raw: true,
@@ -141,6 +142,7 @@ export class ProductAccountService {
       },
       group: ['product_account_id'],
       raw: true,
+      transaction,
     })) as unknown as { product_account_id: number; user_count: number }[];
     const productAccountJSON = { ...productAccount.toJSON(), user_count: 0 };
     if (
@@ -152,9 +154,9 @@ export class ProductAccountService {
     return productAccountJSON;
   }
 
-  async findUsable(productVariantId: number) {
+  async findUsable(productVariantId: number, transaction?: Transaction) {
     const productVariant = (
-      await this.productVariantService.findOne(productVariantId)
+      await this.productVariantService.findOne(productVariantId, transaction)
     ).toJSON();
     if (!productVariant)
       throw new NotFoundException('varian produk tidak ditemukan');
@@ -168,6 +170,7 @@ export class ProductAccountService {
       order: [['batch_start_date', 'asc']],
       raw: true,
       nest: true,
+      transaction,
     })) as unknown as ProductAccountAttributes[];
 
     let usableProductAccountId: number | null = null;
@@ -185,6 +188,7 @@ export class ProductAccountService {
         },
         group: ['product_account_id'],
         raw: true,
+        transaction,
       })) as unknown as { product_account_id: number; user_count: number }[];
 
       const filteredProductAccount = productAccount.filter((item) => {
@@ -204,6 +208,7 @@ export class ProductAccountService {
           where: { product_account_id: { [Op.in]: filteredProductAccountIds } },
           order: [['created_at', 'DESC']],
           raw: true,
+          transaction,
         })) as unknown as ProductAccountUserAttributes[];
         if (users?.length) {
           const userMap = new Map();
@@ -220,7 +225,6 @@ export class ProductAccountService {
             product_account_id: number;
             created_at: Date;
           }[] = Array.from(userMap.values());
-          console.log({ userArr });
 
           const now = new Date().getTime();
           for (const item of filteredProductAccount) {
@@ -251,18 +255,22 @@ export class ProductAccountService {
           status: 'KOSONG',
           product_id: productVariant.product_id,
         },
+        transaction,
       });
 
       if (!emptyProductAccount)
         throw new NotFoundException('Tidak ada akun tersedia');
 
-      await emptyProductAccount.update({
-        product_variant_id: productVariant.id,
-      });
+      await emptyProductAccount.update(
+        {
+          product_variant_id: productVariant.id,
+        },
+        { transaction },
+      );
       usableProductAccountId = emptyProductAccount.id;
     }
 
-    return this.findOne(usableProductAccountId);
+    return this.findOne(usableProductAccountId, transaction);
   }
 
   async create(createProductAccountDto: CreateProductAccountDto) {
@@ -303,6 +311,7 @@ export class ProductAccountService {
   ) {
     const productAccount = await this.productAccountRepository.findOne({
       where: { id: productAccountId },
+      transaction,
     });
 
     if (!productAccount)

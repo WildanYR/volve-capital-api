@@ -7,7 +7,7 @@ export class CreateTransactionDto {
 
   @IsOptional()
   @IsString()
-  status: string;
+  status?: string;
 
   @IsNotEmpty({ message: 'Varian Produk tidak boleh kosong' })
   @IsNumber()

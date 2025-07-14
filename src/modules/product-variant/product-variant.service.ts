@@ -1,7 +1,7 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { PRODUCT_VARIANT_REPOSITORY } from 'src/constant/database.const';
 import { ProductVariant } from 'src/database/models/product-variant.model';
-import { Order, WhereOptions } from 'sequelize';
+import { Order, Transaction, WhereOptions } from 'sequelize';
 import { Op } from 'sequelize';
 import { CreateProductVariantDto } from './dto/create-product-variant.dto';
 import { UpdateProductVariantDto } from './dto/update-product-variant.dto';
@@ -45,10 +45,11 @@ export class ProductVariantService {
     );
   }
 
-  async findOne(productVariantId: number) {
+  async findOne(productVariantId: number, transaction?: Transaction) {
     const productVariant = await this.productVariantRepository.findOne({
       where: { id: productVariantId },
       include: [{ model: Product, as: 'product' }],
+      transaction,
     });
 
     if (!productVariant)

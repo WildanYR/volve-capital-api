@@ -11,6 +11,9 @@ import { ProductAccount } from './product-account.model';
 import { ProductVariant } from './product-variant.model';
 import { Product } from './product.model';
 import { Transaction } from './transaction.model';
+import { AutoBot } from './auto-bot.model';
+import { AutoLog } from './auto-log.model';
+import { AutoBotModule } from './auto-bot-module.model';
 
 export const Models = () => [
   Device,
@@ -26,4 +29,7 @@ export const Models = () => [
   ProductAccount,
   ProductAccountUser,
   Transaction,
+  AutoBot,
+  AutoBotModule,
+  AutoLog,
 ];

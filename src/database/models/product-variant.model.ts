@@ -31,6 +31,7 @@ export interface ProductVariantAttributes {
   interval_hour: number;
   cooldown: number;
   max_user: number;
+  template: string;
   product_id: number;
   product: ProductAttributes;
   platform_product?: PlatformProductAttributes[];

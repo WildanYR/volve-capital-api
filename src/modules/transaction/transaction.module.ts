@@ -9,5 +9,6 @@ import { ProductAccountUserModule } from '../product-account-user/product-accoun
   imports: [PaginateOrderModule, ProductAccountUserModule],
   controllers: [TransactionController],
   providers: [...TransactionDbProvider, TransactionService],
+  exports: [TransactionService],
 })
 export class TransactionModule {}

@@ -18,6 +18,7 @@ import { ProductVariant } from 'src/database/models/product-variant.model';
 import { ProductAccountService } from '../product-account/product-account.service';
 import { UpdateProductAccountDto } from '../product-account/dto/update-product-account.dto';
 import { MysqlProvider } from 'src/database/mysql.provider';
+import { Transaction as SequelizeTransaction } from 'sequelize';
 
 @Injectable()
 export class ProductAccountUserService {
@@ -120,9 +121,16 @@ export class ProductAccountUserService {
     return productAccountUser;
   }
 
-  async create(createProductAccountUserDto: CreateProductAccountUserDto) {
+  async create(
+    createProductAccountUserDto: CreateProductAccountUserDto,
+    transaction?: SequelizeTransaction,
+  ) {
+    const tx = transaction
+      ? transaction
+      : await this.mysqlProvider.transaction();
     const productAccount = await this.productAccountService.findUsable(
       createProductAccountUserDto.product_variant_id,
+      tx,
     );
 
     const now = new Date();
@@ -138,16 +146,16 @@ export class ProductAccountUserService {
     if (productAccount.status === 'KOSONG') {
       updateProductAccountData.status = 'AKTIF';
     }
-    const transaction = await this.mysqlProvider.transaction();
     try {
       await this.productAccountService.update(
         productAccount.id,
         updateProductAccountData,
-        transaction,
+        tx,
       );
 
       const userCount = await this.productAccountUserRepository.count({
         where: { product_account_id: productAccount.id, status: 'AKTIF' },
+        transaction: tx,
       });
       const alphaMap = [
         'B',
@@ -185,12 +193,16 @@ export class ProductAccountUserService {
           status: 'AKTIF',
           account_profile: alphaMap[userCount],
         },
-        { transaction },
+        { transaction: tx },
       );
-      await transaction.commit();
+      if (!transaction) {
+        await tx.commit();
+      }
       return productAccountUser;
     } catch (error) {
-      await transaction.rollback();
+      if (!transaction) {
+        await tx.rollback();
+      }
       throw error;
     }
   }

@@ -18,6 +18,7 @@ import { PlatformProductModule } from './modules/platform-product/platform-produ
 import { ProductAccountModule } from './modules/product-account/product-account.module';
 import { ProductAccountUserModule } from './modules/product-account-user/product-account-user.module';
 import { TransactionModule } from './modules/transaction/transaction.module';
+import { AutomationModule } from './modules/automation/automation.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { TransactionModule } from './modules/transaction/transaction.module';
     ProductAccountModule,
     ProductAccountUserModule,
     TransactionModule,
+    AutomationModule,
   ],
   controllers: [AppController],
   providers: [AppService],
