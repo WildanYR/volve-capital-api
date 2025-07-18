@@ -60,7 +60,6 @@ export class AutomationService {
   ) {}
 
   async connect(botId: string, connectBotDto: ConnectBotDto) {
-    console.log({ connected: { ...connectBotDto, id: botId } });
     const nowDate = new Date();
     const bot = await this.autoBotRepository.findOne({
       where: { bot_id: botId },
@@ -130,7 +129,6 @@ export class AutomationService {
   }
 
   async updateStatus(botId: string, status: string) {
-    console.log({ connected: { id: botId, status } });
     const bot = await this.autoBotRepository.findOne({
       where: { bot_id: botId },
     });
@@ -149,7 +147,6 @@ export class AutomationService {
     try {
       // urai itemnya, cek dengan nama di produk platform
       const productNames = botTransactionDto.items.map((item) => item.name);
-      console.log({ productNames });
       const platformProducts = await this.platformProductRepository.findAll({
         where: {
           product_name: {
@@ -159,7 +156,6 @@ export class AutomationService {
         raw: true,
         transaction,
       });
-      console.log({ platformProducts });
       const transactionsItems: { name: string; product_variant_id: number }[] =
         [];
       for (const pp of platformProducts) {
@@ -176,7 +172,6 @@ export class AutomationService {
           }
         }
       }
-      console.log({ transactionsItems });
       if (!transactionsItems.length) {
         await transaction.commit();
         return { messages: [] };
@@ -188,10 +183,8 @@ export class AutomationService {
           ti,
           transaction,
         );
-        console.log({ generatedTransaction: generatedTransaction.toJSON() });
         generatedTransactionIds.push(generatedTransaction.toJSON().id);
       }
-      console.log({ generatedTransactionIds });
       const transactions = await this.transactionRepository.findAll({
         where: {
           id: { [Op.in]: generatedTransactionIds },
@@ -207,7 +200,6 @@ export class AutomationService {
         ],
         transaction,
       });
-      console.log({ transactions });
       // buat template text berdasarkan template di produk varian
       const messages: string[] = [];
       for (const t of transactions) {
@@ -235,12 +227,11 @@ export class AutomationService {
         messages.push(result.replaceAll(/\\n/g, '\n'));
       }
       await transaction.commit();
-      console.log(messages);
       return { messages };
     } catch (error) {
+      console.error(error);
       await transaction.rollback();
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      console.log({ error });
       const bot = await this.autoBotRepository.findOne({
         where: { bot_id: botId },
         raw: true,

@@ -50,7 +50,7 @@ export class AutoLog extends Model<
   timestamp: Date;
 
   @AllowNull(false)
-  @Column(DataType.STRING)
+  @Column(DataType.TEXT)
   log: string;
 
   @AllowNull(false)
