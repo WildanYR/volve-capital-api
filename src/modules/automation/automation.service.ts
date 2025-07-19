@@ -231,24 +231,8 @@ export class AutomationService {
     } catch (error) {
       console.error(error);
       await transaction.rollback();
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      const bot = await this.autoBotRepository.findOne({
-        where: { bot_id: botId },
-        raw: true,
-      });
-
-      if (bot) {
-        await this.autoLogRepository.create({
-          auto_bot_id: bot.id,
-          timestamp: new Date(),
-          type: 'GENERATE_ACCOUNT_ERROR',
-          log: `Gagal generate akun di penjualan ${botTransactionDto.order_id}`,
-        });
-      }
       return {
-        messages: [
-          'Pesanan kaka sudah kami terima dan akan kami proses sekarang juga ka, mohon ditunggu sebentar 🔁',
-        ],
+        messages: [],
       };
     }
   }
